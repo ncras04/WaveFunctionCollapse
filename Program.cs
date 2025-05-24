@@ -15,7 +15,7 @@ namespace WFC
         private static readonly int[] Masks = [0b_1000_1000_1000_1000, 0b_0100_0100_0100_0100, 0b_0010_0010_0010_0010, 0b_0001_0001_0001_0001];
 
         private const int NullTile = 0b_1111;
-        private static readonly int[] StreetTiles =
+        private static readonly int[] Tiles =
             [
             0b_0100_1011_0000, 0b_1000_0111_0000, 0b_0001_1110_0000, 0b_0010_1101_0000,
             0b_0101_1010_0000, 0b_1001_0110_0000, 0b_0110_1001_0000, 0b_1010_0101_0000,
@@ -26,7 +26,7 @@ namespace WFC
 
 
         private const char NullChar = ' ';
-        private static readonly char[] StreetChars =
+        private static readonly char[] Chars =
             [
             '╩', '╦', '╣', '╠',
             '╝', '╗', '╚', '╔',
@@ -48,21 +48,23 @@ namespace WFC
 
             map = new int[sizeY, sizeX];
 
-            Dictionary<int, char> tiles = new Dictionary<int, char>
+            Dictionary<int, char> tileCharPairs = new Dictionary<int, char>
             {
                 { NullTile, NullChar }
             };
 
-            for (int i = 0; i < StreetTiles.Length; i++)
+            for (int i = 0; i < Tiles.Length; i++)
             {
-                tiles.Add(StreetTiles[i], StreetChars[i]);
+                tileCharPairs.Add(Tiles[i], Chars[i]);
             }
 
             Console.OutputEncoding = Encoding.UTF8;
-            Console.CursorVisible = false;
+
+            int rounds = 0;
 
             top:
 
+            Console.CursorVisible = false;
             for (int y = 0; y < sizeY; y++)
             {
                 for (int x = 0; x < sizeX; x++)
@@ -71,11 +73,15 @@ namespace WFC
                 }
             }
 
-            map[rng.Next(sizeY - 1), rng.Next(sizeX - 1)] = 0b_1000_0111_0000;
+            int firstTileY = rng.Next(sizeY);
+            int firstTileX = rng.Next(sizeX);
+            map[firstTileY, firstTileX] = 0b_1000_0111_0000;
+            Console.SetCursorPosition(firstTileX, firstTileY);
+            Console.Write('╦');
 
             while (true)
             {
-                List<(int, int, int)> leastEntropyTiles = [(tiles.Count, -1, -1)];
+                List<(int, int, int)> leastEntropyTiles = [(int.MaxValue, -1, -1)];
 
                 for (int y = 0; y < sizeY; y++)
                 {
@@ -125,7 +131,7 @@ namespace WFC
 
                         int entropyNumber = 0;
 
-                        foreach (var tile in tiles)
+                        foreach (var tile in tileCharPairs)
                         {
                             if ((tile.Key & result) == result)
                             {
@@ -140,26 +146,25 @@ namespace WFC
                     }
                 }
 
-                if (leastEntropyTiles[0].Item2 == -1 || leastEntropyTiles[0].Item3 == -1)
+                if (leastEntropyTiles[0].Item1 == int.MaxValue)
                     break;
 
                 if (leastEntropyTiles.Count > 1)
                 {
-                    int y = leastEntropyTiles[rng.Next(leastEntropyTiles.Count)].Item2;
-                    int x = leastEntropyTiles[rng.Next(leastEntropyTiles.Count)].Item3;
-
+                    int y = leastEntropyTiles[rng.Next(1, leastEntropyTiles.Count)].Item2;
+                    int x = leastEntropyTiles[rng.Next(1, leastEntropyTiles.Count)].Item3;
                     leastEntropyTiles = [(0, y, x)];
                 }
 
-                var leastEntropyNumber = map[leastEntropyTiles[0].Item2, leastEntropyTiles[0].Item3];
+                var leastEntropy = map[leastEntropyTiles[0].Item2, leastEntropyTiles[0].Item3];
 
-                leastEntropyNumber -= NullTile & leastEntropyNumber;
+                leastEntropy -= NullTile & leastEntropy;
 
                 List<int> possibleTiles = new List<int>();
 
-                foreach (var tile in tiles)
+                foreach (var tile in tileCharPairs)
                 {
-                    if ((tile.Key & leastEntropyNumber) == leastEntropyNumber)
+                    if ((tile.Key & leastEntropy) == leastEntropy)
                     {
                         possibleTiles.Add(tile.Key);
                     }
@@ -172,36 +177,22 @@ namespace WFC
 
                 map[leastEntropyTiles[0].Item2, leastEntropyTiles[0].Item3] = randomPick;
 
-                tiles.TryGetValue(randomPick, out char print);
+                tileCharPairs.TryGetValue(randomPick, out char print);
                 Console.SetCursorPosition(leastEntropyTiles[0].Item3, leastEntropyTiles[0].Item2);
                 Console.Write(print);
-
-
-                //int blacks = 0;
-
-                //for (int y = 0; y < sizeY; y++)
-                //{
-                //    for (int x = 0; x < sizeX; x++)
-                //    {
-                //        if (tiles.TryGetValue(map[y, x], out char print))
-                //        {
-                //            int color = blacks + (1 + y) * x % 15;
-                //            if (color == 0)
-                //            if (color == 0)
-                //            {
-                //                color = 1;
-                //                blacks++;
-                //            }
-
-                //            Console.ForegroundColor = (ConsoleColor)color;
-                //            Console.Write(print);
-                //        }
-                //        else
-                //            Console.Write(NullChar);
-                //    }
-                //    Console.Write('\n');
-                //}
             }
+
+            Console.ReadLine();
+            
+            int color = rounds % 15;
+            rounds++;
+            if (color == 0)
+            {
+                color = 1;
+                rounds++;
+            }
+            Console.ForegroundColor = (ConsoleColor)color;
+
             goto top;
         }
     }
