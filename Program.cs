@@ -14,8 +14,6 @@ namespace WFC
 
         private static readonly int[] Masks = [0b_1000_1000_1000_1000, 0b_0100_0100_0100_0100, 0b_0010_0010_0010_0010, 0b_0001_0001_0001_0001];
 
-        private static readonly int[] EdgeTile = [0b_1000_0000_0000_0000, 0b_0100_0000_0000_0000, 0b_0010_0000_0000_0000, 0b_0001_0000_0000_0000];
-        private const int EdgeMask = 0b_1111_0000_0000_0000;
         private const int NullMask = 0b_1111;
         private static readonly int[] Tiles =
             [
@@ -59,6 +57,7 @@ namespace WFC
                 tileCharPairs.Add(Tiles[i], Chars[i]);
 
             Console.OutputEncoding = Encoding.UTF8;
+            Console.CursorVisible = false;
 
             int rounds = 0;
 
@@ -86,43 +85,50 @@ namespace WFC
                             continue;
 
                         //check up if not on y 0
-                        int tileUpCheck = EdgeTile[(int)EDirection.UP];
+                        int tileUpCheck;
                         if (y != 0)
                         {
                             tileUpCheck = map[y - 1, x] << 1;
                             tileUpCheck &= Masks[(int)EDirection.UP];
                         }
+                        else
+                            tileUpCheck = 0b1000;
 
                         //check down if not on y max
-                        int tileDownCheck = EdgeTile[(int)EDirection.DOWN];
+                        int tileDownCheck;
                         if (y != sizeY - 1)
                         {
                             tileDownCheck = map[y + 1, x] >> 1;
                             tileDownCheck &= Masks[(int)EDirection.DOWN];
                         }
+                        else
+                            tileDownCheck = 0b0100;
 
                         //check left if not on x 0 
-                        int tileLeftCheck = EdgeTile[(int)EDirection.LEFT];
+                        int tileLeftCheck;
                         if (x != 0)
                         {
                             tileLeftCheck = map[y, x - 1] << 1;
                             tileLeftCheck &= Masks[(int)EDirection.LEFT];
                         }
+                        else
+                            tileLeftCheck = 0b0010;
 
                         //check right if not on x max
-                        int tileRightCheck = EdgeTile[(int)EDirection.RIGHT];
+                        int tileRightCheck;
                         if (x != sizeX - 1)
                         {
                             tileRightCheck = map[y, x + 1] >> 1;
                             tileRightCheck &= Masks[(int)EDirection.RIGHT];
                         }
+                        else
+                            tileRightCheck = 0b0001;
 
                         int result = tileUpCheck ^ tileDownCheck ^ tileLeftCheck ^ tileRightCheck;
 
                         map[y, x] = result;
 
                         result -= NullMask & result;
-                        result -= EdgeMask & result;
 
                         int entropyNumber = 0;
 
@@ -139,12 +145,6 @@ namespace WFC
                 if (leastEntropyTiles[0].Item1 == int.MaxValue)
                     break;
 
-                foreach (var toBeChosenTile in leastEntropyTiles)
-                {
-                    Console.SetCursorPosition(toBeChosenTile.Item3, toBeChosenTile.Item2);
-                    Console.Write('X');
-                }
-
                 if (leastEntropyTiles.Count > 1)
                 {
                     int chosenTile = rng.Next(leastEntropyTiles.Count);
@@ -153,13 +153,9 @@ namespace WFC
                     leastEntropyTiles = [(0, y, x)];
                 }
 
-                Console.SetCursorPosition(leastEntropyTiles[0].Item3, leastEntropyTiles[0].Item2);
-                Console.Write('O');
-
                 var leastEntropy = map[leastEntropyTiles[0].Item2, leastEntropyTiles[0].Item3];
 
                 leastEntropy -= NullMask & leastEntropy;
-                leastEntropy -= EdgeMask & leastEntropy;
 
                 List<int> possibleTiles = [];
 
@@ -176,8 +172,8 @@ namespace WFC
                 Console.Write(print);
             }
 
-            Console.ReadLine();
-            Console.Clear();
+            //Console.ReadLine();
+            //Console.Clear();
             int color = rounds % 15;
             rounds++;
             if (color == 0)
