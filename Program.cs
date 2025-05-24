@@ -14,7 +14,9 @@ namespace WFC
 
         private static readonly int[] Masks = [0b_1000_1000_1000_1000, 0b_0100_0100_0100_0100, 0b_0010_0010_0010_0010, 0b_0001_0001_0001_0001];
 
-        private const int NullTile = 0b_1111;
+        private static readonly int[] EdgeTile = [0b_1000_0000_0000_0000, 0b_0100_0000_0000_0000, 0b_0010_0000_0000_0000, 0b_0001_0000_0000_0000];
+        private const int EdgeMask = 0b_1111_0000_0000_0000;
+        private const int NullMask = 0b_1111;
         private static readonly int[] Tiles =
             [
             0b_0100_1011_0000, 0b_1000_0111_0000, 0b_0001_1110_0000, 0b_0010_1101_0000,
@@ -37,7 +39,7 @@ namespace WFC
 
         private static int[,]? map;
 
-        private static Random rng = new Random();
+        private static readonly Random rng = new();
 
         static void Main(string[] args)
         {
@@ -48,9 +50,9 @@ namespace WFC
 
             map = new int[sizeY, sizeX];
 
-            Dictionary<int, char> tileCharPairs = new Dictionary<int, char>
+            Dictionary<int, char> tileCharPairs = new()
             {
-                { NullTile, NullChar }
+                { NullMask, NullChar }
             };
 
             for (int i = 0; i < Tiles.Length; i++)
@@ -62,10 +64,9 @@ namespace WFC
 
             top:
 
-            Console.CursorVisible = false;
             for (int y = 0; y < sizeY; y++)
                 for (int x = 0; x < sizeX; x++)
-                    map[y, x] = NullTile;
+                    map[y, x] = NullMask;
 
             int firstTileY = rng.Next(sizeY);
             int firstTileX = rng.Next(sizeX);
@@ -81,11 +82,11 @@ namespace WFC
                     for (int x = 0; x < sizeX; x++)
                     {
                         //check if collapsed
-                        if ((NullTile & map[y, x]) == 0)
+                        if ((NullMask & map[y, x]) == 0)
                             continue;
 
                         //check up if not on y 0
-                        int tileUpCheck = 0;
+                        int tileUpCheck = EdgeTile[(int)EDirection.UP];
                         if (y != 0)
                         {
                             tileUpCheck = map[y - 1, x] << 1;
@@ -93,7 +94,7 @@ namespace WFC
                         }
 
                         //check down if not on y max
-                        int tileDownCheck = 0;
+                        int tileDownCheck = EdgeTile[(int)EDirection.DOWN];
                         if (y != sizeY - 1)
                         {
                             tileDownCheck = map[y + 1, x] >> 1;
@@ -101,7 +102,7 @@ namespace WFC
                         }
 
                         //check left if not on x 0 
-                        int tileLeftCheck = 0;
+                        int tileLeftCheck = EdgeTile[(int)EDirection.LEFT];
                         if (x != 0)
                         {
                             tileLeftCheck = map[y, x - 1] << 1;
@@ -109,7 +110,7 @@ namespace WFC
                         }
 
                         //check right if not on x max
-                        int tileRightCheck = 0;
+                        int tileRightCheck = EdgeTile[(int)EDirection.RIGHT];
                         if (x != sizeX - 1)
                         {
                             tileRightCheck = map[y, x + 1] >> 1;
@@ -120,7 +121,8 @@ namespace WFC
 
                         map[y, x] = result;
 
-                        result -= NullTile & result;
+                        result -= NullMask & result;
+                        result -= EdgeMask & result;
 
                         int entropyNumber = 0;
 
@@ -137,18 +139,29 @@ namespace WFC
                 if (leastEntropyTiles[0].Item1 == int.MaxValue)
                     break;
 
+                foreach (var toBeChosenTile in leastEntropyTiles)
+                {
+                    Console.SetCursorPosition(toBeChosenTile.Item3, toBeChosenTile.Item2);
+                    Console.Write('X');
+                }
+
                 if (leastEntropyTiles.Count > 1)
                 {
-                    int y = leastEntropyTiles[rng.Next(leastEntropyTiles.Count)].Item2;
-                    int x = leastEntropyTiles[rng.Next(leastEntropyTiles.Count)].Item3;
+                    int chosenTile = rng.Next(leastEntropyTiles.Count);
+                    int y = leastEntropyTiles[chosenTile].Item2;
+                    int x = leastEntropyTiles[chosenTile].Item3;
                     leastEntropyTiles = [(0, y, x)];
                 }
 
+                Console.SetCursorPosition(leastEntropyTiles[0].Item3, leastEntropyTiles[0].Item2);
+                Console.Write('O');
+
                 var leastEntropy = map[leastEntropyTiles[0].Item2, leastEntropyTiles[0].Item3];
 
-                leastEntropy -= NullTile & leastEntropy;
+                leastEntropy -= NullMask & leastEntropy;
+                leastEntropy -= EdgeMask & leastEntropy;
 
-                List<int> possibleTiles = new List<int>();
+                List<int> possibleTiles = [];
 
                 foreach (var tile in Tiles)
                     if ((tile & leastEntropy) == leastEntropy)
@@ -164,7 +177,7 @@ namespace WFC
             }
 
             Console.ReadLine();
-
+            Console.Clear();
             int color = rounds % 15;
             rounds++;
             if (color == 0)
