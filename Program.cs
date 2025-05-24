@@ -54,9 +54,7 @@ namespace WFC
             };
 
             for (int i = 0; i < Tiles.Length; i++)
-            {
                 tileCharPairs.Add(Tiles[i], Chars[i]);
-            }
 
             Console.OutputEncoding = Encoding.UTF8;
 
@@ -66,12 +64,8 @@ namespace WFC
 
             Console.CursorVisible = false;
             for (int y = 0; y < sizeY; y++)
-            {
                 for (int x = 0; x < sizeX; x++)
-                {
                     map[y, x] = NullTile;
-                }
-            }
 
             int firstTileY = rng.Next(sizeY);
             int firstTileX = rng.Next(sizeX);
@@ -84,7 +78,6 @@ namespace WFC
                 List<(int, int, int)> leastEntropyTiles = [(int.MaxValue, -1, -1)];
 
                 for (int y = 0; y < sizeY; y++)
-                {
                     for (int x = 0; x < sizeX; x++)
                     {
                         //check if collapsed
@@ -132,27 +125,22 @@ namespace WFC
                         int entropyNumber = 0;
 
                         foreach (var tile in tileCharPairs)
-                        {
                             if ((tile.Key & result) == result)
-                            {
                                 entropyNumber++;
-                            }
-                        }
 
                         if (entropyNumber < leastEntropyTiles[0].Item1)
                             leastEntropyTiles = [(entropyNumber, y, x)];
                         else if (entropyNumber == leastEntropyTiles[0].Item1)
                             leastEntropyTiles.Add((entropyNumber, y, x));
                     }
-                }
 
                 if (leastEntropyTiles[0].Item1 == int.MaxValue)
                     break;
 
                 if (leastEntropyTiles.Count > 1)
                 {
-                    int y = leastEntropyTiles[rng.Next(1, leastEntropyTiles.Count)].Item2;
-                    int x = leastEntropyTiles[rng.Next(1, leastEntropyTiles.Count)].Item3;
+                    int y = leastEntropyTiles[rng.Next(leastEntropyTiles.Count)].Item2;
+                    int x = leastEntropyTiles[rng.Next(leastEntropyTiles.Count)].Item3;
                     leastEntropyTiles = [(0, y, x)];
                 }
 
@@ -162,18 +150,11 @@ namespace WFC
 
                 List<int> possibleTiles = new List<int>();
 
-                foreach (var tile in tileCharPairs)
-                {
-                    if ((tile.Key & leastEntropy) == leastEntropy)
-                    {
-                        possibleTiles.Add(tile.Key);
-                    }
-                }
+                foreach (var tile in Tiles)
+                    if ((tile & leastEntropy) == leastEntropy)
+                        possibleTiles.Add(tile);
 
-                int randomPick = NullTile;
-
-                while (randomPick == NullTile)
-                    randomPick = possibleTiles[rng.Next(possibleTiles.Count)];
+                int randomPick = possibleTiles[rng.Next(possibleTiles.Count)];
 
                 map[leastEntropyTiles[0].Item2, leastEntropyTiles[0].Item3] = randomPick;
 
@@ -183,7 +164,7 @@ namespace WFC
             }
 
             Console.ReadLine();
-            
+
             int color = rounds % 15;
             rounds++;
             if (color == 0)
