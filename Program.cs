@@ -172,7 +172,7 @@ namespace WFC
                 Console.Write(print);
             }
 
-            //Console.ReadLine();
+            Console.ReadLine();
             //Console.Clear();
             int color = rounds % 15;
             rounds++;
